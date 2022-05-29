@@ -1,0 +1,11 @@
+#
+music_store.sqbpro
+db.txt
+tmp/
+
+# executables
+*.exe
+
+# build каталоги Qt creator
+build-*/
+
