@@ -70,3 +70,6 @@ shop_ticket - чек (фиксация) очередной продажи поз
 
 СУБД - postgresql, mysql или sqlite.
 Язык реализации - С++ или python.
+
+
+https://github.com/ak1974/cpp-single-linked-list.git
