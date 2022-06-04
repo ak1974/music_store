@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab1">
        <attribute name="title">
@@ -26,7 +26,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <layout class="QGridLayout" name="gridLayout">
+         <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,1,0,0">
           <item row="8" column="5">
            <widget class="QToolButton" name="tbDelSingl">
             <property name="minimumSize">
@@ -51,7 +51,11 @@
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QComboBox" name="cbName"/>
+           <widget class="QComboBox" name="cbBandName">
+            <property name="editable">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1">
            <widget class="QToolButton" name="tbAddBand">
@@ -144,7 +148,7 @@
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QLabel" name="lbInfo">
+           <widget class="QLabel" name="lbBandInfo">
             <property name="text">
              <string>Mysic band info</string>
             </property>
@@ -230,7 +234,7 @@
                 </widget>
                </item>
                <item row="8" column="5">
-                <widget class="QToolButton" name="toolButton_2">
+                <widget class="QToolButton" name="tbSaveAlbum">
                  <property name="minimumSize">
                   <size>
                    <width>30</width>
@@ -271,7 +275,7 @@
                 </widget>
                </item>
                <item row="8" column="4">
-                <widget class="QToolButton" name="toolButton_5">
+                <widget class="QToolButton" name="tbBreakAlbum">
                  <property name="minimumSize">
                   <size>
                    <width>30</width>
@@ -284,7 +288,14 @@
                 </widget>
                </item>
                <item row="3" column="0" colspan="3">
-                <widget class="QLineEdit" name="leSeller"/>
+                <widget class="QLineEdit" name="leSeller">
+                 <property name="dragEnabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
                </item>
                <item row="2" column="3">
                 <widget class="QLabel" name="label_11">

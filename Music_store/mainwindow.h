@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QSqlTableModel>
 #include <QSplitter>
+#include <QComboBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -24,6 +25,8 @@ public:
 private:
 
     QSqlTableModel model;
+
+    void fillComboBox(QComboBox *cbox_, const QString &sql_);
 
 
     Ui::MainWindow *ui;

@@ -10,7 +10,8 @@ SOURCES += \
 
 HEADERS += \
     cdebug.h \
-    mainwindow.h
+    mainwindow.h \
+    sqlhelper.h
 
 FORMS += \
     mainwindow.ui
