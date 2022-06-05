@@ -6,8 +6,10 @@
 #include "sqlhelper.h"
 #include <QSqlQuery>
 #include <QCompleter>
+#include <QMessageBox>
 
 const int INVALID_ID = -1;
+const int BAND_ID_COLUMN = 2;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -16,16 +18,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->setWindowTitle("Music store");
 
+
     initFrom();
+    fillForm();
 }
 
 void MainWindow::initFrom()
 {
     CDEBUG;
-    model.setTable("band");
-    model.select();
-    model.setEditStrategy(QSqlTableModel::OnFieldChange);
-
     // tab1 ---------
 
     QCommonStyle style;
@@ -41,13 +41,9 @@ void MainWindow::initFrom()
     ui->tbAddSingl->setToolTip(tr("Добавить композицию/песню"));
     ui->tbDelSingl->setToolTip(tr("Удалить композицию"));
 
-//    ui->tableView->setModel(&model);
-//    ui->tableView->show();
-//    ui->tableView->selectAll();
-
     // tab2 -----------
 
-    ui->splitter->setCollapsible(0,false);// QStyle::SP_DialogSaveButton
+    ui->splitter->setCollapsible(0,false);
 
     ui->tbClearFilter2->setIcon(style.standardIcon(QStyle::SP_LineEditClearButton));
     ui->tbAddTrack->setIcon(style.standardIcon(QStyle::SP_MediaSeekBackward));
@@ -79,8 +75,29 @@ void MainWindow::initFrom()
     ui->tbAdd2store->setToolTip(tr("Добавить диски на склад..."));
     ui->tbDel2store->setToolTip(tr("Удалить диски со склада..."));
     ui->pbApply->setToolTip(tr("Сохранить запись"));
+}
+
+void MainWindow::fillForm()
+{
+    fillArtistTable();
+    fillSinglesTable();
 
     fillComboBox( ui->cbBandName, SQLHELPER::sqlAllBandNameAndId );
+    connect(ui->cbBandName, SIGNAL(currentIndexChanged(int)), this, SLOT(bandNameChange(int)), Qt::UniqueConnection);
+    emit ui->cbBandName->currentIndexChanged(0);
+
+    fillComboBox( ui->cBoxCompany, SQLHELPER::sqlAllCompanyNameAndId );
+    connect(ui->cBoxCompany, SIGNAL(currentIndexChanged(int)), this, SLOT(companyNameChange(int)), Qt::UniqueConnection);
+    emit ui->cBoxCompany->currentIndexChanged(0);
+
+    connect(ui->tbClearFilterTrack, SIGNAL(clicked(bool)), ui->leFilter, SLOT(clear()), Qt::UniqueConnection );
+    connect(ui->leFilter, SIGNAL(textChanged(QString)), this, SLOT(setFilterSinglesModel(QString)));
+
+
+    connect(ui->tbAddBand, SIGNAL(clicked(bool)), this, SLOT( underConstruction()));
+    connect(ui->tbDelBand, SIGNAL(clicked(bool)), this, SLOT( underConstruction()));
+
+
 }
 
 
@@ -98,10 +115,12 @@ void MainWindow::fillComboBox(QComboBox *cbox_, const QString &sql_)
     {
         while (qu.next())
         {
-            int id = qu.value("id").toInt();
-            QString name = qu.value("name").toString();
-            CDEBUG << id << name;
-            cbox_->addItem(name,id);
+            int idTable = qu.value(SQLHELPER::IDTAG).toInt();
+            QString name = qu.value(SQLHELPER::DISPLAYTAG).toString();
+            QString info = qu.value(SQLHELPER::INFOTAG).toString();
+//            CDEBUG << id << name << info;
+            cbox_->addItem(name,info);
+            cbox_->setItemData(cbox_->count()-1, idTable, UserIdRole );
             complLst << name;
         }
     }
@@ -113,10 +132,101 @@ void MainWindow::fillComboBox(QComboBox *cbox_, const QString &sql_)
     cbox_->setCompleter(cmpl);
 }
 
+void MainWindow::fillArtistTable()
+{
+    if( getArtistSqlModel() ) return;
+
+    m_artistSqlModel = new QSqlTableModel(this);
+    m_artistSqlModel->setTable(SQLHELPER::sqlArtistRoleView);
+    m_artistSqlModel->select();
+    m_artistSqlModel->setHeaderData(0, Qt::Horizontal, tr("Роль"));
+    m_artistSqlModel->setHeaderData(1, Qt::Horizontal, tr("Имя"));
+
+    ui->tvArtist->setModel( getArtistSqlModel());
+    ui->tvArtist->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tvArtist->hideColumn(BAND_ID_COLUMN);
+    ui->tvArtist->horizontalHeader()->setStretchLastSection(true);
+    ui->tvArtist->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    m_artistSqlModel->select();
+}
+
+void MainWindow::fillSinglesTable()
+{
+    if( getSinglesSqlModel() ) return;
+
+    m_singlesSqlModel = new QSqlTableModel(this);
+    m_singlesSqlModel->setTable(SQLHELPER::sqlSinglesAlbumView);
+    m_singlesSqlModel->select();
+    m_singlesSqlModel->setHeaderData(0, Qt::Horizontal, tr("Композиция"));
+    m_singlesSqlModel->setHeaderData(1, Qt::Horizontal, tr("Альбом"));
+
+    ui->tvSingles->setModel( getSinglesSqlModel() );
+    ui->tvSingles->setSelectionBehavior(QAbstractItemView::SelectRows);
+    const int MATRIX_COLUMN = 3;
+    ui->tvSingles->hideColumn(BAND_ID_COLUMN);
+    ui->tvSingles->hideColumn(MATRIX_COLUMN);
+    ui->tvSingles->horizontalHeader()->setStretchLastSection(true);
+    ui->tvSingles->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    m_singlesSqlModel->select();
+}
+
+void MainWindow::setFilterArtistModel(int bandId)
+{
+    if( getArtistSqlModel() )
+        getArtistSqlModel()->setFilter(QString("b_id = %1").arg(bandId));
+}
+
+void MainWindow::setFilterSinglesModel(int bandId, const QString &fltName)
+{
+    if( !getSinglesSqlModel() ) return;
+
+    QString flt = QString("b_id = %1 and name like '%%2%'").arg(bandId).arg(fltName);
+    CDEBUG << flt;
+    getSinglesSqlModel()->setFilter(flt);
+}
+
+void MainWindow::setFilterSinglesModel(const QString &flt)
+{
+    int bandId = ui->cbBandName->currentData(UserIdRole).toInt();
+    setFilterSinglesModel(bandId,flt);
+}
+
+void MainWindow::bandNameChange(int id)
+{
+    ui->lbBandInfo->setText( ui->cbBandName->itemData(id, Qt::UserRole).toString() );
+
+    int bandId = ui->cbBandName->itemData(id, UserIdRole).toInt();
+    setFilterArtistModel(bandId);
+    setFilterSinglesModel(bandId, ui->leFilter->text().simplified());
+}
+
+void MainWindow::companyNameChange(int id)
+{
+    QString str = ui->cBoxCompany->itemData(id, Qt::UserRole).toString();
+    ui->cBoxCompany->setToolTip(str);
+}
+
+void MainWindow::underConstruction()
+{
+    QMessageBox::information(this, this->windowTitle(),"Function under construction.");
+}
+
+QSqlTableModel *MainWindow::getArtistSqlModel() const
+{
+    return m_artistSqlModel;
+}
+
+QSqlTableModel *MainWindow::getSinglesSqlModel() const
+{
+    return m_singlesSqlModel;
+}
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
+
 
 
