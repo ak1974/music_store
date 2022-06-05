@@ -91,7 +91,8 @@ INSERT INTO "shop_ticket" VALUES (4,2,'2020-10-20',3.0,3);
 INSERT INTO "shop_ticket" VALUES (5,2,'2020-10-22',1.0,75);
 INSERT INTO "shop_ticket" VALUES (6,4,'2020-05-15',2.0,25);
 INSERT INTO "shop_ticket" VALUES (7,4,'2020-05-16',2.0,20);
-INSERT INTO "shop_ticket" VALUES (8,4,'2020-05-17',4.0,2);
+INSERT INTO "shop_ticket" VALUES (8,4,'2020-05-17',4.0,3);
+INSERT INTO "shop_ticket" VALUES (9,3,'2020-05-05',1.0,95);
 INSERT INTO "shop_stock" VALUES (1,'2020-10-07',1,1.0,2.0,100);
 INSERT INTO "shop_stock" VALUES (2,'2020-10-09',1,1.0,3.0,200);
 INSERT INTO "shop_stock" VALUES (3,'2020-05-03',3,1.0,1.0,100);
@@ -200,8 +201,8 @@ INSERT INTO "album_matrix" VALUES (524049170,'Ensemble of the most important',2)
 INSERT INTO "album_matrix" VALUES (660579451,'Raised',2);
 INSERT INTO "album_matrix" VALUES (867426320,'Ватрушки',2);
 INSERT INTO "art_band_role" VALUES (6,1);
-INSERT INTO "art_band_role" VALUES (8,2);
-INSERT INTO "art_band_role" VALUES (9,2);
+INSERT INTO "art_band_role" VALUES (8,3);
+INSERT INTO "art_band_role" VALUES (9,6);
 INSERT INTO "art_band_role" VALUES (23,2);
 INSERT INTO "art_band_role" VALUES (24,3);
 INSERT INTO "art_band_role" VALUES (25,3);
@@ -459,7 +460,7 @@ INSERT INTO "band" VALUES (4,'Jazz Inside',2);
 INSERT INTO "band" VALUES (5,'Perfect Me',2);
 INSERT INTO "band" VALUES (6,'Hans Zimmer',5);
 INSERT INTO "band" VALUES (7,'Ромашки',2);
-INSERT INTO "band" VALUES (8,'Санкт-Петербургский Государственный Академический оркестр',5);
+INSERT INTO "band" VALUES (8,'Академический оркестр СПб',5);
 INSERT INTO "company" VALUES (1,'Mirex','13053 E National Rd South Vienna, Ohio(OH), 45369','(937) 568-4239',NULL,1);
 INSERT INTO "company" VALUES (2,'EMI','97 Keyes Rd Livingston, New Jersey(NJ), 07039','(240) 375-1288',NULL,1);
 INSERT INTO "company" VALUES (3,'Sony Music Seller','Po Box 3694 Palmer, Alaska(AK), 99645','(201) 996-1427',NULL,0);
@@ -475,4 +476,14 @@ INSERT INTO "band_type" VALUES (2,'Джаз банд',NULL);
 INSERT INTO "band_type" VALUES (3,'Рок группа',NULL);
 INSERT INTO "band_type" VALUES (4,'Квинтет',NULL);
 INSERT INTO "band_type" VALUES (5,'Симфонический оркестр',NULL);
+CREATE VIEW "vi_singles_albums" as
+SELECT s.name as name, am.album_name as album_name, s.author as b_id, a.am_id as am_id   
+FROM singles s left join album a on s.s_id = a.s_id
+LEFT JOIN album_matrix am on a.am_id = am.am_id;
+CREATE VIEW "vi_artist_role" as 
+SELECT ar.name_role, a.name, b.b_id
+FROM band b, artist a, art_band_role abr,  artist_role ar 
+WHERE b.b_id = a.band_id
+AND abr.art_id = a.art_id 
+AND ar.role_id = abr.role_id;
 COMMIT;

@@ -3,12 +3,36 @@
 #include <QApplication>
 #include <QtSql>
 #include "cdebug.h"
+#include <QFile>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QFileDialog>
 
+const QString dbSqlite = "music_store";
+
+QString getDbPath()
+{
+    QString fileName = QFileDialog::getOpenFileName(0,
+        ("Open sqlite 'music_store' data base"), QDir::currentPath(), "music_store" );
+    return fileName;
+}
 
 static bool createConnection()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("music_store");
+
+    bool isExistDb = QFileInfo::exists(dbSqlite);
+
+    if( !isExistDb )
+    {
+        QString dbFilePath = getDbPath();
+        if(dbFilePath.isEmpty()) return false;
+        db.setDatabaseName(dbFilePath);
+    }
+    else
+    {
+        db.setDatabaseName(dbSqlite);
+    }
 
     if (!db.open()) {
         CDEBUG << "Cannot open database:" << db.lastError();
