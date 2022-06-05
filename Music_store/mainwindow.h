@@ -51,6 +51,10 @@ private slots:
 
 private:
 
+
+    void tmpConnnect(); // debug only
+
+
     Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H

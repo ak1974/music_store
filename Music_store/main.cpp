@@ -8,7 +8,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
-const QString dbSqlite = "music_store";
+const QString DB_SQLITE_FILE_NAME = "music_store";
 
 QString getDbPath()
 {
@@ -21,7 +21,7 @@ static bool createConnection()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 
-    bool isExistDb = QFileInfo::exists(dbSqlite);
+    bool isExistDb = QFileInfo::exists(DB_SQLITE_FILE_NAME);
 
     if( !isExistDb )
     {
@@ -31,7 +31,7 @@ static bool createConnection()
     }
     else
     {
-        db.setDatabaseName(dbSqlite);
+        db.setDatabaseName(DB_SQLITE_FILE_NAME);
     }
 
     if (!db.open()) {

@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->setWindowTitle("Music store");
 
+    tmpConnnect(); // until construction only
 
     initFrom();
     fillForm();
@@ -92,12 +93,6 @@ void MainWindow::fillForm()
 
     connect(ui->tbClearFilterTrack, SIGNAL(clicked(bool)), ui->leFilter, SLOT(clear()), Qt::UniqueConnection );
     connect(ui->leFilter, SIGNAL(textChanged(QString)), this, SLOT(setFilterSinglesModel(QString)));
-
-
-    connect(ui->tbAddBand, SIGNAL(clicked(bool)), this, SLOT( underConstruction()));
-    connect(ui->tbDelBand, SIGNAL(clicked(bool)), this, SLOT( underConstruction()));
-
-
 }
 
 
@@ -193,6 +188,7 @@ void MainWindow::setFilterSinglesModel(const QString &flt)
     setFilterSinglesModel(bandId,flt);
 }
 
+
 void MainWindow::bandNameChange(int id)
 {
     ui->lbBandInfo->setText( ui->cbBandName->itemData(id, Qt::UserRole).toString() );
@@ -222,6 +218,23 @@ QSqlTableModel *MainWindow::getSinglesSqlModel() const
 {
     return m_singlesSqlModel;
 }
+
+
+void MainWindow::tmpConnnect()
+{
+    // QAbstractButton::clicked()
+
+    QList<QAbstractButton*> abLst;
+    abLst << ui->tbDelArtist << ui->tbAddArtist << ui->tbAddSingl << ui->tbDelSingl
+          << ui->tbAddRelease << ui->tbRemRelease << ui->tbBreakAlbum << ui->tbSaveAlbum
+          << ui->tbAddTrack << ui->tbRemTrack << ui->tbRemCurrentTrack << ui->tbAdd2store << ui->tbDel2store
+          << ui->pbApply << ui->pbReport2 << ui->pbReport1 << ui->tbAddBand << ui->tbDelBand;
+
+    foreach (auto ab, abLst) {
+        connect(ab, SIGNAL(clicked(bool)), this, SLOT( underConstruction()), Qt::UniqueConnection);
+    }
+}
+
 
 MainWindow::~MainWindow()
 {
