@@ -69,8 +69,9 @@ void MainWindow::initFrom()
 
     // tab3 -----------
 
-    ui->leYear->setPlaceholderText("Отчетный год в формате YYYY");
+    ui->leYear->setPlaceholderText(tr("Отчетный год в формате YYYY"));
     ui->leYear->setValidator( new QIntValidator(0, 9999, this) );
+    ui->leYear->setToolTip(tr("Отчетный год в формате YYYY"));
     ui->pbReport1->setToolTip(tr("Лидеры продаж по количеству дисков."));
     ui->pbReport2->setToolTip(tr("Лидеры продаж по объёму прибыли."));
     ui->tbAdd2store->setToolTip(tr("Добавить диски на склад..."));
@@ -93,6 +94,17 @@ void MainWindow::fillForm()
 
     connect(ui->tbClearFilterTrack, SIGNAL(clicked(bool)), ui->leFilter, SLOT(clear()), Qt::UniqueConnection );
     connect(ui->leFilter, SIGNAL(textChanged(QString)), this, SLOT(setFilterSinglesModel(QString)));
+
+
+    //
+    // QSqlQueryModel qm;
+    // qm.setQuery();
+    // qm.findChildren
+    // QSqlTableModel tm;
+
+
+
+
 }
 
 

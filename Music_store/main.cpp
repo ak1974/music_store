@@ -35,7 +35,7 @@ static bool createConnection()
     }
 
     if (!db.open()) {
-        CDEBUG << "Cannot open database:" << db.lastError();
+        CDEBUG << "Cannot open database:" << db.lastError().text();
         return false;
     } else {
         CDEBUG << db.userName() << db.hostName() << db.password();
