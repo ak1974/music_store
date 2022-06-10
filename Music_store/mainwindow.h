@@ -26,14 +26,16 @@ public:
     QSqlTableModel *getArtistSqlModel() const;
     QSqlTableModel *getSinglesSqlModel() const;
 
+
 private:
 
     enum { UserIdRole = Qt::UserRole+1 };
 
     QSqlTableModel *m_artistSqlModel = nullptr;
     QSqlTableModel *m_singlesSqlModel = nullptr;
+    QSqlQueryModel *m_releaseQueryModel = nullptr;
 
-    void fillComboBox(QComboBox *cbox_, const QString &sql_);
+    void fillComboBox(QComboBox *cbox_, const QString &sql_, bool addCompleter = true);
     void fillArtistTable();
     void fillSinglesTable();
 
@@ -45,6 +47,7 @@ private slots:
 
     void bandNameChange(int id);
     void companyNameChange(int id);
+    void albumNameChange(int id);
 
     void underConstruction();
     void setFilterSinglesModel(const QString &flt);

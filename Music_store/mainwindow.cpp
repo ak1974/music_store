@@ -95,6 +95,7 @@ void MainWindow::fillForm()
     connect(ui->tbClearFilterTrack, SIGNAL(clicked(bool)), ui->leFilter, SLOT(clear()), Qt::UniqueConnection );
     connect(ui->leFilter, SIGNAL(textChanged(QString)), this, SLOT(setFilterSinglesModel(QString)));
 
+    connect(ui->cBoxAlbum, SIGNAL(currentIndexChanged(int)), this, SLOT(albumNameChange(int)), Qt::UniqueConnection);
 
     //
     // QSqlQueryModel qm;
@@ -109,7 +110,7 @@ void MainWindow::fillForm()
 
 
 
-void MainWindow::fillComboBox(QComboBox *cbox_, const QString &sql_)
+void MainWindow::fillComboBox(QComboBox *cbox_, const QString &sql_, bool addCompleter)
 {
     if( !cbox_ || sql_.simplified().isEmpty()) return;
 
@@ -122,15 +123,16 @@ void MainWindow::fillComboBox(QComboBox *cbox_, const QString &sql_)
     {
         while (qu.next())
         {
-            int idTable = qu.value(SQLHELPER::IDTAG).toInt();
+            int idTable  = qu.value(SQLHELPER::IDTAG).toInt();
             QString name = qu.value(SQLHELPER::DISPLAYTAG).toString();
             QString info = qu.value(SQLHELPER::INFOTAG).toString();
-//            CDEBUG << id << name << info;
+            CDEBUG << idTable << name << info;
             cbox_->addItem(name,info);
             cbox_->setItemData(cbox_->count()-1, idTable, UserIdRole );
             complLst << name;
         }
     }
+    if( !addCompleter ) return;
 
     QCompleter* cmpl = new QCompleter(complLst,this);
     cmpl->setCaseSensitivity(Qt::CaseInsensitive);
@@ -204,16 +206,46 @@ void MainWindow::setFilterSinglesModel(const QString &flt)
 void MainWindow::bandNameChange(int id)
 {
     ui->lbBandInfo->setText( ui->cbBandName->itemData(id, Qt::UserRole).toString() );
-
     int bandId = ui->cbBandName->itemData(id, UserIdRole).toInt();
+
     setFilterArtistModel(bandId);
     setFilterSinglesModel(bandId, ui->leFilter->text().simplified());
 }
 
 void MainWindow::companyNameChange(int id)
 {
-    QString str = ui->cBoxCompany->itemData(id, Qt::UserRole).toString();
-    ui->cBoxCompany->setToolTip(str);
+    ui->cBoxCompany->setToolTip(ui->cBoxCompany->itemData(id, Qt::UserRole).toString());
+    int idComp = ui->cBoxCompany->itemData(id, UserIdRole).toInt();
+
+    fillComboBox( ui->cBoxAlbum, SQLHELPER::sqlAllAlbumNameForCompany.arg(idComp), false);
+    albumNameChange( ui->cBoxAlbum->currentIndex() );
+}
+
+void MainWindow::albumNameChange(int id)
+{
+    int matrixId = ui->cBoxAlbum->itemData(id, UserIdRole).toInt();
+    QString err;
+    QVariant val = selectValue(SQLHELPER::sqlSellerByMatrixId.arg(matrixId), err);
+    //CDEBUG << matrixId << val << err << id;
+    if( !err.isEmpty())
+    {
+        CDEBUG << err;
+        return;
+    }
+
+    ui->leSeller->setText( val.toString() );
+    QString sql = SQLHELPER::sqlReleaseDateByMatrixId.arg(matrixId);
+
+    if( !m_releaseQueryModel )
+    {
+        m_releaseQueryModel = new QSqlQueryModel(this);
+        ui->tvDateRelease->setModel(m_releaseQueryModel);
+        ui->tvDateRelease->horizontalHeader()->setStretchLastSection(true);
+        //ui->tvDateRelease->setHorizontalHeader();
+        //m_releaseQueryModel->setHeaderData()
+    }
+
+    m_releaseQueryModel->setQuery( sql );
 }
 
 void MainWindow::underConstruction()
