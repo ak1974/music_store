@@ -5,23 +5,14 @@
 #include <QVariantHash>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QCompleter>
+#include <QTableWidget>
 
-static QVariant selectValue(const QString &sql, QString &errText)
+enum { UserIdRole = Qt::UserRole+1 };
+
+namespace SQLHELPER
 {
-    QSqlQuery qu(sql);
-    if(qu.exec())
-    {
-        qu.next();
-        return qu.value(0);
-    }
-    else
-    {
-        errText = qu.lastError().text();
-    }
-    return QVariant();
-}
-
-namespace SQLHELPER {
+    const QString errMessage = "Query:\n %1 \ncan't be executed.\nProblem: %2";
 
     static QVariantHash sqlResultToAttrValueHash(const QVariantList &sqlResultList, const QString &ColumnForKey, const QString &ColumnForValue)
     {
@@ -59,7 +50,92 @@ namespace SQLHELPER {
 
     // Треки - принадлежность дискам (могут быть без дисков)
     const QString sqlSinglesAlbumView = "vi_singles_albums";
+
+    // Треки - принадлежность матрице (am_id)
+    const QString sqlSinglesByMatrixId = " SELECT name, am_id, s_id FROM vi_singles_albums WHERE am_id=%1";
+
 }
 
+QVariant selectValue(const QString &sql, QString &errText)
+{
+    QSqlQuery qu(sql);
+    if(qu.exec())
+    {
+        qu.next();
+        return qu.value(0);
+    }
+    else
+    {
+        errText = qu.lastError().text();
+    }
+    return QVariant();
+}
+
+
+void fillComboBox(QComboBox *cbox_, const QString &sql_, bool addCompleter = true)
+{
+    if( !cbox_ || sql_.simplified().isEmpty()) return;
+
+    cbox_->clear();
+    QStringList complLst;
+    QSqlQuery qu(sql_,QSqlDatabase::database());
+
+    if( qu.exec() )
+    {
+        while (qu.next())
+        {
+            int idTable  = qu.value(SQLHELPER::IDTAG).toInt();
+            QString name = qu.value(SQLHELPER::DISPLAYTAG).toString();
+            QString info = qu.value(SQLHELPER::INFOTAG).toString();
+//            CDEBUG << idTable << name << info;
+            cbox_->addItem(name,info);
+            cbox_->setItemData(cbox_->count()-1, idTable, UserIdRole );
+            complLst << name;
+        }
+    }
+    else
+    {
+        throw SQLHELPER::errMessage.arg(sql_).arg( qu.lastError().text() );
+    }
+
+    if( !addCompleter ) return;
+
+    QCompleter* cmpl = new QCompleter(complLst,cbox_);
+    cmpl->setCaseSensitivity(Qt::CaseInsensitive);
+    cmpl->setCompletionMode(QCompleter::PopupCompletion);
+    //cmpl->setModelSorting(QCompleter::CaseInsensitivelySortedModel);
+    cbox_->setCompleter(cmpl);
+}
+
+void fillTableWidgetFromDB(QTableWidget &tw, const QString &sql_)
+{
+    tw.clear();
+    tw.setRowCount(0);
+    QSqlQuery qu(sql_, QSqlDatabase::database());
+
+    if(qu.exec())
+    {
+        tw.setColumnCount(qu.record().count());
+        QStringList header;
+
+        for(int col=0; col<qu.record().count(); ++col)
+            header << qu.record().fieldName(col);
+
+        tw.setHorizontalHeaderLabels(header);
+
+        while(qu.next())
+        {
+            const int row = tw.rowCount();
+            tw.insertRow(row);
+
+            for(int col=0; col<qu.record().count(); ++col)
+                tw.setItem(row, col, new QTableWidgetItem(qu.value(col).toString()) );
+        }
+    }
+    else
+    {
+        throw SQLHELPER::errMessage.arg(sql_).arg( qu.lastError().text() );
+    }
+}
 
 

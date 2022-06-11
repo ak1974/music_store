@@ -5,6 +5,8 @@ SqlStandardItemModel::SqlStandardItemModel(QObject *parent) : QStandardItemModel
 {
     CDEBUG;
     initModel();
+
+
 }
 
 SqlStandardItemModel::SqlStandardItemModel(const QSqlDatabase &sqb_,
@@ -26,12 +28,16 @@ SqlStandardItemModel::~SqlStandardItemModel()
     clear();
 }
 
-void SqlStandardItemModel::setQuery(const QString &_query)
+void SqlStandardItemModel::setQuery(const QString &query_)
 {
-    m_queryText = _query;
-
+    m_queryText = query_;
     if( isParamInit() )
         selectHorizontalHeader();
+}
+
+void SqlStandardItemModel::setTable(const QString &tableName)
+{
+    setQuery(" SELECT * FROM " + tableName);
 }
 
 void SqlStandardItemModel::initModel()
@@ -45,6 +51,8 @@ void SqlStandardItemModel::selectHorizontalHeader()
 //  CDEBUG << query() << dataBase().connectionName();
     QString err;
     QStringList lst = SqlWorker::getHorizontalHeader(query(), dataBase(), err);
+
+    CDEBUG << lst;
 
     if(lst.isEmpty()){
         CDEBUG << err;

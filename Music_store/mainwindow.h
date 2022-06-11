@@ -5,6 +5,9 @@
 #include <QSqlTableModel>
 #include <QSplitter>
 #include <QComboBox>
+#include "sqlstandartitemmodel.h"
+#include <QSortFilterProxyModel>
+#include <QTableWidget>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,7 +29,6 @@ public:
     QSqlTableModel *getArtistSqlModel() const;
     QSqlTableModel *getSinglesSqlModel() const;
 
-
 private:
 
     enum { UserIdRole = Qt::UserRole+1 };
@@ -35,13 +37,15 @@ private:
     QSqlTableModel *m_singlesSqlModel = nullptr;
     QSqlQueryModel *m_releaseQueryModel = nullptr;
 
-    void fillComboBox(QComboBox *cbox_, const QString &sql_, bool addCompleter = true);
-    void fillArtistTable();
-    void fillSinglesTable();
+    SqlStandardItemModel  m_singlesSqlItemModel;
+    QSortFilterProxyModel m_singlesProxyModel;
+
+    void initArtistTable();
+    void initSinglesTable();
+    void initAllSinglesTable();
 
     void setFilterArtistModel(int bandId);
-    void setFilterSinglesModel(int bandId, const QString &fltName = QString());
-
+    void setFilterSinglesModel(int bandId, const QString &fltName = QString());    
 
 private slots:
 
@@ -50,13 +54,18 @@ private slots:
     void albumNameChange(int id);
 
     void underConstruction();
-    void setFilterSinglesModel(const QString &flt);
+    void setFilterSinglesModel(const QString &flt_);
+    void setFilterAllSinglesModel(const QString &flt_);
+
+    void remCurrentAlbumSingle();
+    void addOneSingeToAlbum();
+    void fillAlbumTracksTable();
+
+    void decorationForm();
 
 private:
 
-
     void tmpConnnect(); // debug only
-
 
     Ui::MainWindow *ui;
 };

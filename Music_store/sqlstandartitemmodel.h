@@ -29,7 +29,8 @@ public:
     QString query() const { return m_queryText; }
 
     // Задать условия и получить заголовок
-    void setQuery(const QString &_query);
+    void setQuery(const QString &query_);
+    void setTable(const QString &tableName);
 
 public slots:   
     void select(); // запустить получение данных из базы
