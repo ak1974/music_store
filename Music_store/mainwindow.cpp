@@ -7,6 +7,7 @@
 #include <QSqlQuery>
 #include <QCompleter>
 #include <QMessageBox>
+#include <QInputDialog>
 
 const int INVALID_ID = -1;
 const int TRACKS_NAME_COLUMN    = 0;
@@ -69,8 +70,10 @@ void MainWindow::initFrom()
     ui->tbAddRelease->setToolTip(tr("Добавить релиз альбома"));
     ui->tbRemRelease->setToolTip(tr("Удалить релиз альбома"));
     ui->tbBreakAlbum->setToolTip(tr("Отменить все изменения альбома"));
-    ui->tbSaveAlbum->setToolTip(tr("Сохранить изменения в базу"));
+    ui->tbSaveAlbum->setToolTip(tr("Сохранить изменения в базу..."));
     ui->tbClearFilter2->setToolTip(tr("Очистить фильтр"));
+    ui->tbAddAlbum->setToolTip(tr("Добавить новый альбом"));
+    ui->tbRemAlbum->setToolTip(tr("Удалить текущий альбом..."));
 
     // tab3 -----------
 
@@ -120,8 +123,12 @@ void MainWindow::fillForm()
     ui->tbAddTrack->setEnabled(false);
 
     connect(ui->tbRemCurrentTrack, SIGNAL(clicked(bool)), this, SLOT(remCurrentAlbumSingle()) );
-    connect(ui->tbBreakAlbum, SIGNAL(clicked(bool)), this, SLOT(fillAlbumTracksTable()));
     connect(ui->tbAddTrack, SIGNAL(clicked(bool)), this, SLOT(addOneSingeToAlbum()) );
+    connect(ui->tbSaveAlbum, SIGNAL(clicked(bool)), this, SLOT(saveAlbumToDB()));
+    connect(ui->tbBreakAlbum, SIGNAL(clicked(bool)), this, SLOT(fillAlbumTracksTable()));
+
+    connect(ui->tbAddAlbum, SIGNAL(clicked(bool)), this, SLOT(addAlbum()));
+    connect(ui->tbRemAlbum, SIGNAL(clicked(bool)), this, SLOT(remAlbum()));
 }
 
 void MainWindow::initArtistTable()
@@ -199,6 +206,7 @@ void MainWindow::setFilterSinglesModel(int bandId, const QString &fltName)
     getSinglesSqlModel()->setFilter(flt);
 }
 
+
 void MainWindow::setFilterAllSinglesModel(const QString &flt_)
 {
     m_singlesProxyModel.setFilterFixedString(flt_);
@@ -216,25 +224,20 @@ void MainWindow::addOneSingeToAlbum()
     QModelIndex mi = ui->tvAllTracks->currentIndex();
     ui->tvAllTracks->showColumn(TRACKS_MATRIX_COLUMN);
     ui->tvAllTracks->showColumn(TRACKS_SINGLE_COLUMN);
+    ui->tvAllTracks->showColumn(TRACKS_BAND_ID_COLUMN);
     ui->tvAllTracks->selectRow(mi.row());
     QModelIndexList miList = ui->tvAllTracks->selectionModel()->selectedIndexes();
     ui->tvAllTracks->hideColumn(TRACKS_MATRIX_COLUMN);
     ui->tvAllTracks->hideColumn(TRACKS_SINGLE_COLUMN);
+    ui->tvAllTracks->hideColumn(TRACKS_BAND_ID_COLUMN);
 
-    QList<int> colums({TRACKS_NAME_COLUMN,TRACKS_MATRIX_COLUMN,TRACKS_SINGLE_COLUMN});
+    QList<int> colums({TRACKS_NAME_COLUMN,TRACKS_MATRIX_COLUMN,TRACKS_SINGLE_COLUMN,TRACKS_BAND_ID_COLUMN});
     const int row = ui->tableWidgetTracks->rowCount();
     ui->tableWidgetTracks->insertRow(row);
 
-    for (auto col:colums)
-        ui->tableWidgetTracks->setItem(row, col, new QTableWidgetItem(miList.value(col).data().toString()));
-
-    int rcnt = ui->tableWidgetTracks->rowCount()-1;
-    CDEBUG << rcnt << ui->tableWidgetTracks->columnCount();
-
-//    CDEBUG << ui->tableWidgetTracks->item(rcnt,0)->data(Qt::DisplayRole);
-//    CDEBUG << ui->tableWidgetTracks->item(rcnt,1)->data(Qt::DisplayRole);
-//    CDEBUG << ui->tableWidgetTracks->item(rcnt,2)->data(Qt::DisplayRole);
-
+    int twCol=0;
+    for(auto col:colums)
+        ui->tableWidgetTracks->setItem(row, twCol++, new QTableWidgetItem(miList.value(col).data().toString()));
 }
 
 void MainWindow::decorationForm()
@@ -267,10 +270,19 @@ void MainWindow::companyNameChange(int id)
 {
     ui->cBoxCompany->setToolTip(ui->cBoxCompany->itemData(id, Qt::UserRole).toString());
     int idComp = ui->cBoxCompany->itemData(id, UserIdRole).toInt();
-
+    CDEBUG << idComp;
     fillComboBox( ui->cBoxAlbum, SQLHELPER::sqlAllAlbumNameForCompany.arg(idComp), false);
+    emit ui->cBoxAlbum->setCurrentIndex(ui->cBoxAlbum->count()-1);
     albumNameChange( ui->cBoxAlbum->currentIndex() );
 }
+
+void MainWindow::companyNameChange()
+{
+    int id = ui->cBoxCompany->currentIndex();
+    CDEBUG << id;
+    companyNameChange(id);
+}
+
 
 void MainWindow::albumNameChange(int id)
 {    
@@ -305,9 +317,6 @@ void MainWindow::albumNameChange(int id)
 void MainWindow::fillAlbumTracksTable()
 {
     int matrixId = ui->cBoxAlbum->currentData(UserIdRole).toInt();
-
-    CDEBUG << SQLHELPER::sqlSinglesByMatrixId.arg(matrixId);
-
     try
     {
         fillTableWidgetFromDB(*ui->tableWidgetTracks, SQLHELPER::sqlSinglesByMatrixId.arg(matrixId));
@@ -315,18 +324,115 @@ void MainWindow::fillAlbumTracksTable()
     catch (QString err)
     {
         QMessageBox::information(this, this->windowTitle(), err);
+        return;
     }
-    int NAME=0, AM_ID=1, S_ID=2;
+    int NAME=0, AM_ID=1, S_ID=2, B_ID=3;
     ui->tableWidgetTracks->horizontalHeaderItem(NAME)->setData(Qt::DisplayRole, QVariant("Композиция"));
     ui->tableWidgetTracks->hideColumn(AM_ID);
     ui->tableWidgetTracks->hideColumn(S_ID);
+    ui->tableWidgetTracks->hideColumn(B_ID);
     ui->tableWidgetTracks->horizontalHeader()->setStretchLastSection(true);
     ui->tableWidgetTracks->setSelectionMode(QAbstractItemView::SingleSelection);
 
     emit decorationForm();
 }
 
+void MainWindow::saveAlbumToDB()
+{
+    int matrixId = ui->cBoxAlbum->currentData(UserIdRole).toInt();
+    auto reply = QMessageBox::question(this, ui->tbSaveAlbum->toolTip(),
+                                       "Сохранить альбом '"
+                                       + ui->cBoxAlbum->currentText()
+                                       + "' в базу данных?\nЭта операция необратима.",
+                                       QMessageBox::Yes|QMessageBox::No);
+    if (reply != QMessageBox::Yes) return;
 
+    QString sql = SQLHELPER::sqlDeleteSinglesToAlbum.arg(matrixId);
+
+    try {
+        execWithException(sql);
+    }
+    catch (QString err) {
+        QMessageBox::information(this, this->windowTitle(), err);
+        return;
+    }
+    const int S_ID=2, B_ID=3;
+
+    QStringList sqlValues;
+    QString valMask = "(%1,%2,%3)";
+
+    for(int row=0; row < ui->tableWidgetTracks->rowCount(); ++row )
+    {
+
+        QString sid = ui->tableWidgetTracks->item(row,S_ID)->text();
+        QString bid = ui->tableWidgetTracks->item(row,B_ID)->text();
+        sqlValues << valMask.arg(matrixId).arg(sid).arg(bid);
+    }
+
+    sql = SQLHELPER::sqlInsertSinglesToAlbum + sqlValues.join(",");
+
+    try {
+        execWithException(sql);
+    }
+    catch (QString err) {
+        QMessageBox::information(this, this->windowTitle(), err);
+        return;
+    }
+}
+
+void MainWindow::addAlbum()
+{
+    int idComp = ui->cBoxCompany->currentData(UserIdRole).toInt();
+    bool ok;
+    QString text = QInputDialog::getText(this,
+                                 QString::fromUtf8("Добавить новый альбом"),
+                                 QString::fromUtf8("Введите название нового альбома:"),
+                                 QLineEdit::Normal,
+                                 "Самый лучший диск", &ok);
+    if(!ok) return;
+    if(text.simplified().isEmpty())
+    {
+        QMessageBox::information(this, this->windowTitle(), "Название альбома не может быть пустым.");
+        return;
+    }
+    QString err;
+    QVariant val = selectValue(SQLHELPER::sqlSelectMaxMatrixId, err);
+    const int BEGIN_ID = 100000000;
+    int am_id = val.isValid() ? val.toInt()+1 : BEGIN_ID;
+
+    QString sql = SQLHELPER::sqlInsertAlbumToMatrix.arg(am_id).arg(text).arg(idComp);
+//    CDEBUG << sql;
+    try {
+        execWithException(sql);
+    }
+    catch (QString err) {
+        QMessageBox::information(this, this->windowTitle(), err);
+        return;
+    }
+    companyNameChange();
+}
+
+void MainWindow::remAlbum()
+{
+    auto reply = QMessageBox::question(this, ui->tbSaveAlbum->toolTip(),
+                                       "Удалить альбом '"
+                                       + ui->cBoxAlbum->currentText()
+                                       + "' из базы данных?\nЭта операция необратима.",
+                                       QMessageBox::Yes|QMessageBox::No);
+    if (reply != QMessageBox::Yes) return;
+
+    int matrixId = ui->cBoxAlbum->currentData(UserIdRole).toInt();
+    QString sql = SQLHELPER::sqlDeleteMatrix.arg(matrixId);
+
+    try {
+        execWithException(sql);
+    }
+    catch (QString err) {
+        QMessageBox::information(this, this->windowTitle(), err);
+        return;
+    }
+    companyNameChange();
+}
 
 void MainWindow::underConstruction()
 {
@@ -349,7 +455,7 @@ void MainWindow::tmpConnnect()
 
     QList<QAbstractButton*> abLst;
     abLst << ui->tbDelArtist << ui->tbAddArtist << ui->tbAddSingl << ui->tbDelSingl
-          << ui->tbAddRelease << ui->tbRemRelease << ui->tbSaveAlbum
+          << ui->tbAddRelease << ui->tbRemRelease
           << ui->tbRemTrack << ui->tbAdd2store << ui->tbDel2store
           << ui->pbApply << ui->pbReport2 << ui->pbReport1 << ui->tbAddBand << ui->tbDelBand;
 

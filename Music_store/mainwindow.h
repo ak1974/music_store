@@ -37,7 +37,7 @@ private:
     QSqlTableModel *m_singlesSqlModel = nullptr;
     QSqlQueryModel *m_releaseQueryModel = nullptr;
 
-    SqlStandardItemModel  m_singlesSqlItemModel;
+    SqlStandardItemModel  m_singlesSqlItemModel; // Модель с загрузкой данных через поток
     QSortFilterProxyModel m_singlesProxyModel;
 
     void initArtistTable();
@@ -46,6 +46,8 @@ private:
 
     void setFilterArtistModel(int bandId);
     void setFilterSinglesModel(int bandId, const QString &fltName = QString());    
+
+    void companyNameChange();
 
 private slots:
 
@@ -58,8 +60,12 @@ private slots:
     void setFilterAllSinglesModel(const QString &flt_);
 
     void remCurrentAlbumSingle();
-    void addOneSingeToAlbum();
+    void addOneSingeToAlbum();    
     void fillAlbumTracksTable();
+    void saveAlbumToDB();
+
+    void addAlbum();
+    void remAlbum();
 
     void decorationForm();
 

@@ -38,6 +38,13 @@ namespace SQLHELPER
     const QString sqlSellerByMatrixId = " SELECT c.name AS name FROM album_matrix am, album_release ar, company c "
             " WHERE am.am_id = ar.am_id AND ar.cmp_id = c.c_id AND am.am_id = %1 LIMIT 1 ";
 
+    // Максимальный id марицы
+    const QString sqlSelectMaxMatrixId = " SELECT MAX(am_id) AS am_id FROM album_matrix ";
+
+    // Добавить новый альбом (name, company_id)
+    const QString sqlInsertAlbumToMatrix = " INSERT INTO album_matrix (am_id, album_name, cmp_id) VALUES(%1, '%2', %3) ";
+
+
     // Релизы альбома по матрице (am_id)
     const QString sqlReleaseDateByMatrixId = " SELECT date /*,am_id*/ FROM album_release WHERE am_id=%1 ";
 
@@ -52,9 +59,25 @@ namespace SQLHELPER
     const QString sqlSinglesAlbumView = "vi_singles_albums";
 
     // Треки - принадлежность матрице (am_id)
-    const QString sqlSinglesByMatrixId = " SELECT name, am_id, s_id FROM vi_singles_albums WHERE am_id=%1";
+    const QString sqlSinglesByMatrixId = " SELECT name, am_id, s_id, b_id FROM vi_singles_albums WHERE am_id=%1 ";
 
+    // Добавить песню в альбом (am_id, s_id, b_id)    
+    const QString sqlInsertSinglesToAlbum = " INSERT OR IGNORE INTO album (am_id, s_id, b_id) VALUES ";
+
+    // Удалить альбом
+    const QString sqlDeleteSinglesToAlbum = " DELETE FROM album WHERE am_id = %1 ";
+
+    // удалить матрицу вместе с альбомом
+    const QString sqlDeleteMatrix = " DELETE FROM album_matrix WHERE am_id = %1 ";
 }
+
+void execWithException(const QString &sql)
+{
+    QSqlQuery qu(QSqlDatabase::database());
+    if(!qu.exec(sql))
+        throw SQLHELPER::errMessage.arg(sql).arg( qu.lastError().text() );
+}
+
 
 QVariant selectValue(const QString &sql, QString &errText)
 {
@@ -83,7 +106,7 @@ void fillComboBox(QComboBox *cbox_, const QString &sql_, bool addCompleter = tru
     if( qu.exec() )
     {
         while (qu.next())
-        {
+        {           
             int idTable  = qu.value(SQLHELPER::IDTAG).toInt();
             QString name = qu.value(SQLHELPER::DISPLAYTAG).toString();
             QString info = qu.value(SQLHELPER::INFOTAG).toString();
