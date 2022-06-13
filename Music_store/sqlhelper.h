@@ -67,8 +67,34 @@ namespace SQLHELPER
     // Удалить альбом
     const QString sqlDeleteSinglesToAlbum = " DELETE FROM album WHERE am_id = %1 ";
 
-    // удалить матрицу вместе с альбомом
+    // Удалить матрицу вместе с альбомом
     const QString sqlDeleteMatrix = " DELETE FROM album_matrix WHERE am_id = %1 ";
+
+    // Склад
+    const QString sqlShopStorage = " SELECT am.album_name AS name, ar.date, ss.date_load, total, trade_price, retail_price "
+            " FROM shop_stock ss, album_release ar, album_matrix am "
+            " WHERE ss.ar_id = ar.ar_id AND ar.am_id = am.am_id ";
+
+    // Продажа (чек)
+    const QString sqlSellTicket =
+            " SELECT am.album_name as name, st.sale_date, st.unit_price, st.sale_count, st.unit_price * st.sale_count as total "
+            " FROM shop_stock ss, album_release ar, album_matrix am, shop_ticket st "
+            " WHERE ss.ar_id = ar.ar_id AND ar.am_id = am.am_id AND st.ss_id = ss.ss_id ";
+
+    // Отчет: самы продаваемый альбом
+    const QString sqlReportSellLeader = " SELECT am.album_name, SUM(st.sale_count) as 'total sold' "
+            " FROM album_matrix am, album_release ar, shop_stock ss, shop_ticket st "
+            " WHERE am.am_id = ar.am_id AND ar.ar_id = ss.ar_id AND ss.ss_id = st.ss_id "
+            " AND STRFTIME('%Y',st.sale_date) = '%1' GROUP BY am.am_id ORDER BY 'total_sold' ";
+
+    // Отчет: самы прибыльный альбом
+    const QString sqlReportProfitLeader = " SELECT album_name, all_profit from ( "
+            " SELECT am.am_id, am.album_name, ss.date_load, ss.ss_id, st.unit_price, st.sale_count "
+            " ,SUM((st.unit_price * st.sale_count)) as all_profit  "
+            " FROM album_matrix am, album_release ar, shop_stock ss, shop_ticket st   "
+            " WHERE am.am_id = ar.am_id AND ar.ar_id = ss.ar_id AND ss.ss_id = st.ss_id "
+            " AND STRFTIME('%Y',st.sale_date) = '%1' "
+            " GROUP BY am.am_id)  ORDER BY all_profit DESC ";
 }
 
 void execWithException(const QString &sql)

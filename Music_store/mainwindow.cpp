@@ -92,6 +92,8 @@ void MainWindow::fillForm()
     initArtistTable();
     initSinglesTable();
     initAllSinglesTable();
+    initShopStorage();
+    initSellTable();
 
     try
     {
@@ -129,6 +131,9 @@ void MainWindow::fillForm()
 
     connect(ui->tbAddAlbum, SIGNAL(clicked(bool)), this, SLOT(addAlbum()));
     connect(ui->tbRemAlbum, SIGNAL(clicked(bool)), this, SLOT(remAlbum()));
+
+    connect(ui->pbReport1, SIGNAL(clicked(bool)), this, SLOT(makeReport()));
+    connect(ui->pbReport2, SIGNAL(clicked(bool)), this, SLOT(makeReport()));
 }
 
 void MainWindow::initArtistTable()
@@ -190,6 +195,56 @@ void MainWindow::initAllSinglesTable()
     ui->tvAllTracks->hideColumn(TRACKS_SINGLE_COLUMN);
     ui->tvAllTracks->horizontalHeader()->setStretchLastSection(true);
     ui->tvAllTracks->setEditTriggers(QAbstractItemView::NoEditTriggers);
+}
+
+void MainWindow::initShopStorage()
+{
+    QSqlQueryModel* quModel = qobject_cast<QSqlQueryModel*>(ui->tvStorage->model());
+
+    if(!quModel){
+        quModel = new QSqlQueryModel( ui->tvStorage );
+        ui->tvStorage->setModel(quModel);
+    }
+
+    QString sql = SQLHELPER::sqlShopStorage;
+    quModel->setQuery(sql);
+
+    if( quModel->lastError().isValid() )
+        CDEBUG << quModel->lastError().text();
+
+    QStringList headers({tr("Альбом"),tr("Дт. релиза"),tr("Дт. поставки"),
+                         tr("Размер партии шт."),tr("Цена опт."),tr("Цена розн.")});
+
+    for (int cl = 0; cl < headers.count(); ++cl)
+        quModel->setHeaderData(cl, Qt::Horizontal, headers.at(cl));
+
+    ui->tvStorage->horizontalHeader()->setStretchLastSection(true);
+    ui->tvStorage->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );
+}
+
+void MainWindow::initSellTable()
+{
+    CDEBUG;
+    QSqlQueryModel* quModel = qobject_cast<QSqlQueryModel*>(ui->tvSell->model());
+
+    if(!quModel){
+        quModel = new QSqlQueryModel( ui->tvSell );
+        ui->tvSell->setModel(quModel);
+    }
+
+    QString sql = SQLHELPER::sqlSellTicket;
+    quModel->setQuery(sql);
+
+    if( quModel->lastError().isValid() )
+        CDEBUG << quModel->lastError().text();
+
+    QStringList headers({tr("Альбом"),tr("Дт. продажи"),tr("Цена(у.е.)"),tr("Продано шт."),tr("И того(у.е.):")});
+
+    for (int cl = 0; cl < headers.count(); ++cl)
+        quModel->setHeaderData(cl, Qt::Horizontal, headers.at(cl));
+
+    ui->tvSell->horizontalHeader()->setStretchLastSection(true);
+    ui->tvSell->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents );
 }
 
 
@@ -434,6 +489,42 @@ void MainWindow::remAlbum()
     companyNameChange();
 }
 
+void MainWindow::makeReport()
+{
+    const QString year = ui->leYear->text().simplified();
+    QString sql;
+    QString mask;
+
+    if(qobject_cast<QPushButton* >(sender()) == ui->pbReport1 )
+    {
+        sql = SQLHELPER::sqlReportSellLeader.arg(year);
+        mask = "Альбом '%1' - продано: %2 шт.\n";
+    }
+    else if(qobject_cast<QPushButton* >(sender()) == ui->pbReport2 )
+    {
+        sql = SQLHELPER::sqlReportProfitLeader.arg(year);
+        mask = "Альбом '%1' - доход: %2 у.е.\n";
+    }
+    if(sql.simplified().isEmpty()) return;
+
+    QSqlQueryModel *quModel = new QSqlQueryModel(this);
+    quModel->setQuery(sql);
+
+    if( !quModel->lastError().text().simplified().isEmpty() )
+    {
+        QMessageBox::information(this, "Report", quModel->lastError().text());
+        return;
+    }
+    enum{COL_NAME=0, COL_ALL};
+    for(int row = 0; row < quModel->rowCount(); ++row)
+    {
+           QString str = mask.arg(quModel->index(row,COL_NAME).data().toString())
+                   .arg(quModel->index(row,COL_ALL).data().toString());
+           ui->plainTeReport->insertPlainText(str);
+    };
+    ui->plainTeReport->insertPlainText("\n");
+}
+
 void MainWindow::underConstruction()
 {
     QMessageBox::information(this, this->windowTitle(),"Function under construction.");
@@ -451,13 +542,11 @@ QSqlTableModel *MainWindow::getSinglesSqlModel() const
 
 void MainWindow::tmpConnnect()
 {
-    // QAbstractButton::clicked()
-
     QList<QAbstractButton*> abLst;
     abLst << ui->tbDelArtist << ui->tbAddArtist << ui->tbAddSingl << ui->tbDelSingl
           << ui->tbAddRelease << ui->tbRemRelease
           << ui->tbRemTrack << ui->tbAdd2store << ui->tbDel2store
-          << ui->pbApply << ui->pbReport2 << ui->pbReport1 << ui->tbAddBand << ui->tbDelBand;
+          << ui->pbApply << ui->tbAddBand << ui->tbDelBand;
 
     foreach (auto ab, abLst) {
         connect(ab, SIGNAL(clicked(bool)), this, SLOT( underConstruction()), Qt::UniqueConnection);

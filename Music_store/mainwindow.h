@@ -43,6 +43,8 @@ private:
     void initArtistTable();
     void initSinglesTable();
     void initAllSinglesTable();
+    void initShopStorage();
+    void initSellTable();
 
     void setFilterArtistModel(int bandId);
     void setFilterSinglesModel(int bandId, const QString &fltName = QString());    
@@ -65,7 +67,9 @@ private slots:
     void saveAlbumToDB();
 
     void addAlbum();
-    void remAlbum();
+    void remAlbum();        
+
+    void makeReport();
 
     void decorationForm();
 
