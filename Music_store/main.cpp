@@ -8,12 +8,12 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
-const QString DB_SQLITE_FILE_NAME = "music_store";
+const QString DB_SQLITE_FILE_NAME = "music_store.sqlite";
 
 QString getDbPath()
 {
     QString fileName = QFileDialog::getOpenFileName(0,
-        ("Open sqlite 'music_store' data base"), QDir::currentPath(), "music_store" );
+        ("Open sqlite 'music_store' data base"), QDir::currentPath(), "music_store.sqlite" );
     return fileName;
 }
 

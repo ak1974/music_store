@@ -24,14 +24,12 @@ MainWindow::MainWindow(QWidget *parent)
     this->setWindowTitle("Music store");
 
     tmpConnnect(); // until construction only
-
     initFrom();
     fillForm();
 }
 
 void MainWindow::initFrom()
 {
-    CDEBUG;
     // tab1 ---------
 
     QCommonStyle style;
@@ -224,7 +222,6 @@ void MainWindow::initShopStorage()
 
 void MainWindow::initSellTable()
 {
-    CDEBUG;
     QSqlQueryModel* quModel = qobject_cast<QSqlQueryModel*>(ui->tvSell->model());
 
     if(!quModel){
@@ -270,7 +267,6 @@ void MainWindow::setFilterAllSinglesModel(const QString &flt_)
 
 void MainWindow::remCurrentAlbumSingle()
 {
-    CDEBUG;
     ui->tableWidgetTracks->removeRow(ui->tableWidgetTracks->currentRow());
 }
 
@@ -325,7 +321,6 @@ void MainWindow::companyNameChange(int id)
 {
     ui->cBoxCompany->setToolTip(ui->cBoxCompany->itemData(id, Qt::UserRole).toString());
     int idComp = ui->cBoxCompany->itemData(id, UserIdRole).toInt();
-    CDEBUG << idComp;
     fillComboBox( ui->cBoxAlbum, SQLHELPER::sqlAllAlbumNameForCompany.arg(idComp), false);
     emit ui->cBoxAlbum->setCurrentIndex(ui->cBoxAlbum->count()-1);
     albumNameChange( ui->cBoxAlbum->currentIndex() );
@@ -334,7 +329,6 @@ void MainWindow::companyNameChange(int id)
 void MainWindow::companyNameChange()
 {
     int id = ui->cBoxCompany->currentIndex();
-    CDEBUG << id;
     companyNameChange(id);
 }
 
