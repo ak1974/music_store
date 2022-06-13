@@ -108,12 +108,7 @@ shop_ticket - чек (фиксация) очередной продажи поз
     )
     ORDER BY all_profit DESC; 
     
-4)
-INSERT INTO album(am_id, s_id, b_id) VALUES(0, 0, 0);
-
-5)
-INSERT INTO band (band_name, bt_id) VALUES('', 0);
-
+Остальные запросы для работы интерфейса программы представлены в файле sqlhelper.h.
     
 
 // TASK ------------------------------------------------
